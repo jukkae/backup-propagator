@@ -149,19 +149,9 @@ public class BackupPropagator {
 
 				// try executing rdiff-backup for watched directory
 				try {
-					System.out.println("trying rdiff");
-					Process rdiffBackupProcess = Runtime.getRuntime().exec(
-							"rdiff-backup.exe --version");
-					InputStream rdiffStream = rdiffBackupProcess
-							.getInputStream();
-					Reader reader = new InputStreamReader(rdiffStream);
-					BufferedReader bReader = new BufferedReader(reader);
-					String nextLine = null;
-					while ((nextLine = bReader.readLine()) != null) {
-						System.out.println(nextLine);
-					}
+					backup();
 				} catch (IOException x) {
-					// ignore
+					
 				}
 
 				// if directory is created, and watching recursively, then
@@ -172,7 +162,7 @@ public class BackupPropagator {
 							registerAll(child);
 						}
 					} catch (IOException x) {
-						// ignore to keep sample readable
+						
 					}
 				}
 			}
@@ -187,6 +177,20 @@ public class BackupPropagator {
 					break;
 				}
 			}
+		}
+	}
+	
+	void backup() throws IOException {
+		System.out.println("trying rdiff");
+		Process rdiffBackupProcess = Runtime.getRuntime().exec(
+				"rdiff-backup.exe --version");
+		InputStream rdiffStream = rdiffBackupProcess
+				.getInputStream();
+		Reader reader = new InputStreamReader(rdiffStream);
+		BufferedReader bReader = new BufferedReader(reader);
+		String nextLine = null;
+		while ((nextLine = bReader.readLine()) != null) {
+			System.out.println(nextLine);
 		}
 	}
 
