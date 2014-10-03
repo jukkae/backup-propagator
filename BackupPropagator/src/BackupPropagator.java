@@ -50,6 +50,7 @@ public class BackupPropagator {
 	private Map<WatchKey, Path> keys;
 	private boolean recursive;
 	private boolean trace = false;
+	private Path remoteDir;
 
 	@SuppressWarnings("unchecked")
 	static <T> WatchEvent<T> cast(WatchEvent<?> event) {
@@ -93,11 +94,13 @@ public class BackupPropagator {
 
 	/**
 	 * Creates a BackupPropagator and registers the given directory
+	 * @param remoteDir 
 	 */
-	BackupPropagator(Path dir, boolean recursive) throws IOException {
+	BackupPropagator(Path dir, Path remoteDir, boolean recursive) throws IOException {
 		this.watcher = FileSystems.getDefault().newWatchService();
 		this.keys = new HashMap<WatchKey, Path>();
 		this.recursive = recursive;
+		this.remoteDir = remoteDir;
 
 		if (recursive) {
 			System.out.format("Scanning %s ...\n", dir);
@@ -115,6 +118,7 @@ public class BackupPropagator {
 	 * Process all events for keys queued to the watcher
 	 */
 	void processEvents() {
+		System.out.println("All systems are go!");
 		for (;;) {
 
 			// wait for key to be signalled
@@ -181,7 +185,8 @@ public class BackupPropagator {
 	}
 	
 	void backup() throws IOException {
-		System.out.println("trying rdiff");
+		String remote = remoteDir.toString();
+		System.out.println("trying rdiff, remote is: " + remote);
 		Process rdiffBackupProcess = Runtime.getRuntime().exec(
 				"rdiff-backup.exe --version");
 		InputStream rdiffStream = rdiffBackupProcess
@@ -195,25 +200,19 @@ public class BackupPropagator {
 	}
 
 	static void usage() {
-		System.err.println("usage: java BackupPropagator [-r] dir");
+		System.err.println("usage: java BackupPropagator watchDir remoteDir");
 		System.exit(-1);
 	}
 
 	public static void main(String[] args) throws IOException {
 		// parse arguments
-		if (args.length == 0 || args.length > 2)
+		if (args.length != 2)
 			usage();
-		boolean recursive = false;
-		int dirArg = 0;
-		if (args[0].equals("-r")) {
-			if (args.length < 2)
-				usage();
-			recursive = true;
-			dirArg++;
-		}
-
+		boolean recursive = true;
+		
 		// register directory and process its events
-		Path dir = Paths.get(args[dirArg]);
-		new BackupPropagator(dir, recursive).processEvents();
+		Path dir = Paths.get(args[0]);
+		Path remoteDir = Paths.get(args[1]);
+		new BackupPropagator(dir, remoteDir, recursive).processEvents();
 	}
 }
