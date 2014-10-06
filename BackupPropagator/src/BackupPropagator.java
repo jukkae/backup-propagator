@@ -51,6 +51,7 @@ public class BackupPropagator {
 	private boolean recursive;
 	private boolean trace = false;
 	private Path remoteDir;
+	private Path directory; // TODO this is for testing, use directory registry!
 
 	@SuppressWarnings("unchecked")
 	static <T> WatchEvent<T> cast(WatchEvent<?> event) {
@@ -94,21 +95,17 @@ public class BackupPropagator {
 
 	/**
 	 * Creates a BackupPropagator and registers the given directory
-	 * @param remoteDir 
+	 * 
+	 * @param remoteDir
 	 */
-	BackupPropagator(Path dir, Path remoteDir, boolean recursive) throws IOException {
+	BackupPropagator(Path dir, Path remoteDir) throws IOException {
 		this.watcher = FileSystems.getDefault().newWatchService();
 		this.keys = new HashMap<WatchKey, Path>();
-		this.recursive = recursive;
+		this.recursive = true;
 		this.remoteDir = remoteDir;
+		this.directory = dir;
 
-		if (recursive) {
-			System.out.format("Scanning %s ...\n", dir);
-			registerAll(dir);
-			System.out.println("Done.");
-		} else {
-			register(dir);
-		}
+		register(dir);
 
 		// enable trace after initial registration
 		this.trace = true;
@@ -155,7 +152,7 @@ public class BackupPropagator {
 				try {
 					backup();
 				} catch (IOException x) {
-					
+					System.out.println(x.getStackTrace());
 				}
 
 				// if directory is created, and watching recursively, then
@@ -166,7 +163,7 @@ public class BackupPropagator {
 							registerAll(child);
 						}
 					} catch (IOException x) {
-						
+						System.out.println(x.getStackTrace());
 					}
 				}
 			}
@@ -183,14 +180,16 @@ public class BackupPropagator {
 			}
 		}
 	}
-	
+
 	void backup() throws IOException {
 		String remote = remoteDir.toString();
+		String dir = directory.toString();
 		System.out.println("trying rdiff, remote is: " + remote);
+
+		// TODO TEST
 		Process rdiffBackupProcess = Runtime.getRuntime().exec(
-				"rdiff-backup.exe --version");
-		InputStream rdiffStream = rdiffBackupProcess
-				.getInputStream();
+				"rdiff-backup.exe -v9 " + dir + " " + remote);
+		InputStream rdiffStream = rdiffBackupProcess.getInputStream();
 		Reader reader = new InputStreamReader(rdiffStream);
 		BufferedReader bReader = new BufferedReader(reader);
 		String nextLine = null;
@@ -208,11 +207,10 @@ public class BackupPropagator {
 		// parse arguments
 		if (args.length != 2)
 			usage();
-		boolean recursive = true;
-		
-		// register directory and process its events
+
+		// register directory and remote and process its events
 		Path dir = Paths.get(args[0]);
 		Path remoteDir = Paths.get(args[1]);
-		new BackupPropagator(dir, remoteDir, recursive).processEvents();
+		new BackupPropagator(dir, remoteDir).processEvents();
 	}
 }
