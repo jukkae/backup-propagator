@@ -48,7 +48,6 @@ public class BackupPropagator {
 
 	private WatchService watcher;
 	private Map<WatchKey, Path> keys;
-	private boolean recursive;
 	private boolean trace = false;
 	private Path remoteDir;
 	private Path directory; // TODO this is for testing, use directory registry!
@@ -77,21 +76,6 @@ public class BackupPropagator {
 		keys.put(key, dir);
 	}
 
-	/**
-	 * Register the given directory, and all its sub-directories, with the
-	 * WatchService.
-	 */
-	private void registerAll(final Path start) throws IOException {
-		// register directory and sub-directories
-		Files.walkFileTree(start, new SimpleFileVisitor<Path>() {
-			@Override
-			public FileVisitResult preVisitDirectory(Path dir,
-					BasicFileAttributes attrs) throws IOException {
-				register(dir);
-				return FileVisitResult.CONTINUE;
-			}
-		});
-	}
 
 	/**
 	 * Creates a BackupPropagator and registers the given directory
@@ -101,7 +85,6 @@ public class BackupPropagator {
 	BackupPropagator(Path dir, Path remoteDir) throws IOException {
 		this.watcher = FileSystems.getDefault().newWatchService();
 		this.keys = new HashMap<WatchKey, Path>();
-		this.recursive = true;
 		this.remoteDir = remoteDir;
 		this.directory = dir;
 
@@ -155,17 +138,6 @@ public class BackupPropagator {
 					System.out.println(x.getStackTrace());
 				}
 
-				// if directory is created, and watching recursively, then
-				// register it and its sub-directories
-				if (recursive && (kind == ENTRY_CREATE)) {
-					try {
-						if (Files.isDirectory(child, NOFOLLOW_LINKS)) {
-							registerAll(child);
-						}
-					} catch (IOException x) {
-						System.out.println(x.getStackTrace());
-					}
-				}
 			}
 
 			// reset key and remove from set if directory no longer accessible
