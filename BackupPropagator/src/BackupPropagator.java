@@ -133,6 +133,8 @@ public class BackupPropagator {
 
 				// try executing rdiff-backup for watched directory
 				try {
+					System.out.println("Name: " + name);
+					System.out.println("Child: " + child);
 					backup();
 				} catch (IOException x) {
 					System.out.println(x.getStackTrace());
